@@ -1,7 +1,7 @@
 const qs = require("querystring");
 const crypto = require("crypto");
 
-function check(query) {
+function check(query, secretKey) {
 	const urlParams = qs.parse(query);
 	const ordered = {};
 	Object.keys(urlParams)
@@ -14,7 +14,7 @@ function check(query) {
 
 	const stringParams = qs.stringify(ordered);
 	const paramsHash = crypto
-		.createHmac("sha256", "123")
+		.createHmac("sha256", secretKey)
 		.update(stringParams)
 		.digest()
 		.toString("base64")
