@@ -1,44 +1,30 @@
+const qs = require("querystring");
 const crypto = require("crypto");
 
-function ksort(query) {
-	return query
-		.split("&")
-		.map(queryParam => {
-			let kvp = queryParam.split("=");
-			return { key: kvp[0], value: kvp[1] };
-		})
-		.reduce((query, kvp) => {
-			query[kvp.key] = kvp.value;
-			return query;
-		}, {});
-}
+function check(query) {
+	const urlParams = qs.parse(query);
+	const ordered = {};
+	Object.keys(urlParams)
+		.sort()
+		.forEach((key) => {
+			if (key.slice(0, 3) === "vk_") {
+				ordered[key] = urlParams[key];
+			}
+		});
 
-function check(query, key) {
-	let params = ksort(query);
-
-	const sign = params.sign;
-	let str = Object.keys(params).reduce((signQuery, param) => {
-		if (param.indexOf("vk_") !== -1)
-			return (signQuery += `${param}=${params[`${param}`]}&`);
-		else return signQuery;
-	}, "?");
-	str = str.substring(1, str.length - 1);
-
-	let hash = crypto
-		.createHmac("sha256", key)
-		.update(str)
-		.digest("base64")
-		.split("+")
-		.join("-")
-		.split("/")
-		.join("_")
-		.replace("=", "");
+	const stringParams = qs.stringify(ordered);
+	const paramsHash = crypto
+		.createHmac("sha256", "123")
+		.update(stringParams)
+		.digest()
+		.toString("base64")
+		.replace(/\+/g, "-")
+		.replace(/\//g, "_")
+		.replace(/=$/, "");
 
 	return new Promise((resolve, reject) =>
-		hash === sign ? resolve(params) : reject(params)
+		paramsHash === urlParams.sign ? resolve(urlParams) : reject(urlParams)
 	);
 }
 
-module.exports = {
-	check
-};
+module.exports = check;
